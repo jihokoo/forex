@@ -23,7 +23,7 @@ describe('forex', function() {
       });
     });
   });
-  
+
   beforeEach(function() {
     exchangeRate = new Forex('test_file.json');
   });
@@ -56,6 +56,21 @@ describe('forex', function() {
     exchangeRate.getLatestRate.should.be.an.instanceOf(Function);
     exchangeRate.getSavedRate.should.be.an.instanceOf(Function);
   });
+
+  it("can take a currency code and report the latest exchange rate", function(done) {
+    exchangeRate.getLatestRate('USD').then(function(data) {
+      data.should.equal('$ 1');
+      done();
+    }).catch(function(err){
+      done(err);
+    });
+  });
+
+  it("saves the latest exchange rates into a static file at specified file path", function() {
+    var rates = require('../'+exchangeRate.filePath()).conversionRates['USD'];
+    rates.should.have.properties('USD', 'EUR', 'KRW');
+  });
+
 
   it("updates the static file when getLatestRate is called", function(){
     var oldTime = require('../'+exchangeRate.filePath()).date;

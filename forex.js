@@ -3,7 +3,12 @@ var fs = require('fs'),
   Q = require('q'),
   saved_rates;
 
-var Forex = function(filePath){
+var getSymbol = function(currencyCode){
+  var localData = require('./locale_data.json');
+  return localData[currencyCode]['symbol_native'];
+};
+
+var Forex = function(filePath, loadFromFile){
   if((this instanceof Forex) == false) {
       return new Forex(filePath);
   }
@@ -13,6 +18,7 @@ var Forex = function(filePath){
   this.filePath = function(){
     return _filePath_;
   };
+  this.loadFromFile = !!loadFromFile;
 };
 
 Forex.prototype.getLatestRate = function(currencyTo){
@@ -40,5 +46,44 @@ Forex.prototype.getSavedRate = function(currencyTo){
   deferred.resolve(symbol+ ' ' +rate);
   return deferred.promise;
 };
+
+// Module will default to loading from live
+Forex.prototype.getRate = function(currencyTo){
+  var deferred = Q.defer();
+  var self = this;
+  if(!currencyTo) {
+    deferred.reject({error: true, message: "please enter a currency code"});
+    return deferred.promise;
+  }
+  if (this.loadFromFile) {
+    self.getSavedRate(currencyTo)
+      .then(function(rate){
+        deferred.resolve(rate);
+      })
+      .then(function(err){
+        deferred.reject(err);
+      });
+  }
+  else {
+    self.getLatestRate(currencyTo)
+      .then(function(rate){
+        deferred.resolve(rate);
+      })
+      .then(function(err){
+        deferred.reject(err);
+      });
+  }
+  return deferred.promise;
+};
+
+// gets locale data from localeplanet.com on load, since JavaScript doesn't have locale data
+// wondering if i need to pull this everytime, or saving locally is okay
+(function initialize(){
+  request.get({url: 'http://www.localeplanet.com/api/auto/currencymap.json', json:true}, function(e, r, body){
+    fs.writeFile('locale_data.json', JSON.stringify(body, null, 4), function(err, datum){
+      if(err) throw err;
+    });
+  });
+})()
 
 module.exports = Forex;
