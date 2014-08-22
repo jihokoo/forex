@@ -1,0 +1,28 @@
+{
+  "name": "forex_final",
+  "version": "0.0.0",
+  "description": "module to retrieve exchange rates from live API and static storage",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test nodemon ./node_modules/.bin/mocha --reporter spec --timeout 10000 test/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jihokoo/forex.git"
+  },
+  "author": "Ji Ho Koo <jihokoo@gmail.com> (http://jihokoo.com/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jihokoo/forex/issues"
+  },
+  "homepage": "https://github.com/jihokoo/forex",
+  "dependencies": {
+    "chai": "^1.9.1",
+    "chai-as-promised": "^4.1.1",
+    "mocha": "^1.21.4",
+    "nodemon": "^1.2.1",
+    "q": "^1.0.1",
+    "request": "^2.40.0",
+    "should": "^4.0.4"
+  }
+}
