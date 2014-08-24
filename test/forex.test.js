@@ -11,6 +11,7 @@ chai.use(chaiAsPromised);
 var assert = chai.assert;
 var expect = chai.expect;
 
+
 describe('forex', function() {
   var exchangeRate;
 
@@ -57,29 +58,43 @@ describe('forex', function() {
     exchangeRate.getSavedRate.should.be.an.instanceOf(Function);
   });
 
-  it("can take a currency code and report the latest exchange rate", function(done) {
-    exchangeRate.getLatestRate('USD').then(function(data) {
-      data.should.equal('$ 1');
-      done();
-    }).catch(function(err){
-      done(err);
+  describe('getLatestRate', function () {
+
+    it("can take a currency code and report the latest exchange rate", function(done) {
+      exchangeRate.getLatestRate('USD').then(function(data) {
+        data.should.equal('$ 1');
+        done();
+      }).catch(function(err){
+        done(err);
+      });
     });
-  });
 
-  it("saves the latest exchange rates into a static file at specified file path", function() {
-    var rates = require('../'+exchangeRate.filePath()).conversionRates['USD'];
-    rates.should.have.properties('USD', 'EUR', 'KRW');
-  });
+    it("saves the latest exchange rates into a static file at specified file path", function() {
+      var rates = require('../'+exchangeRate.filePath()).conversionRates['USD'];
+      rates.should.have.properties('USD', 'EUR', 'KRW');
+    });
 
+    it("updates the static file when getLatestRate is called", function(done){
+      var oldTime = require('../'+exchangeRate.filePath()).date;
+      exchangeRate.getLatestRate('USD').then(function() {
+        fs.readFile(exchangeRate.filePath(), function(err, datum){
+          var currentTime = JSON.parse(datum).date
+          currentTime.should.be.greaterThan(oldTime);
+          done();
+        });
+      }).catch(function(err){
+        done(err);
+      });
+    });
 
-  it("updates the static file when getLatestRate is called", function(){
-    var oldTime = require('../'+exchangeRate.filePath()).date;
-    exchangeRate.getLatestRate('USD').then(function() {
-      var currentTime = require('../'+exchangeRate.filePath()).date;
-      currentTime.should.be.greaterThan(oldTime);
-      done();
-    }).catch(function(err){
-      done(err);
+    it("throws an error when an invalid currency code is entered", function(done){
+      exchangeRate.getLatestRate('SD').then(function() {
+        done()
+      }).catch(function(err){
+        err.should.be.an.instanceof(Error);
+        err.message.should.equal('This is either an incorrect code or this code is not yet supported.');
+        done();
+      });
     });
   });
 
@@ -88,15 +103,28 @@ describe('forex', function() {
   // });
   // *** alternative method in mocha
 
-  it("can take a currency code and report a saved exchange rate", function(done) {
-    exchangeRate.getSavedRate('EUR').then(function(data) {
-      var rate = require('../'+exchangeRate.filePath()).conversionRates['USD']['EUR'];
-      var symbol = localeData['EUR']['symbol_native'];
+  describe('getSavedRate', function () {
 
-      data.should.equal(symbol+ ' ' +rate);
-      done();
-    }).catch(function(err){
-      done(err);
+    it("can take a currency code and report a saved exchange rate", function(done) {
+      exchangeRate.getSavedRate('EUR').then(function(data) {
+        var rate = require('../'+exchangeRate.filePath()).conversionRates['USD']['EUR'];
+        var symbol = localeData['EUR']['symbol_native'];
+
+        data.should.equal(symbol+ ' ' +rate);
+        done();
+      }).catch(function(err){
+        done(err);
+      });
+    });
+
+    it("throws an error when an invalid currency code is entered", function(done){
+      exchangeRate.getLatestRate('SD').then(function() {
+        done()
+      }).catch(function(err){
+        err.should.be.an.instanceof(Error);
+        err.message.should.equal('This is either an incorrect code or this code is not yet supported.');
+        done();
+      });
     });
   });
   /*
@@ -108,17 +136,51 @@ describe('forex', function() {
     *** note for the future, chai > should
   */
 
-  it("can be configured to return from static store or live api through a second parameter", function(done) {
-    var test = new Forex('test_file.json', true);
-    test.loadFromFile.should.be.true;
+  describe('getRate', function() {
+    it("can be configured to return from static store or live api through a second parameter", function(done) {
+      var test = new Forex('test_file.json', true);
+      test.loadFromFile.should.be.true;
 
-    var oldTime = require('../'+exchangeRate.filePath()).date;
-    test.getRate('EUR').then(function(data) {
-      var currentTime = require('../'+exchangeRate.filePath()).date;
-      currentTime.should.equal(oldTime);
-      done();
-    }).catch(function(err){
-      done(err);
+      fs.readFile(exchangeRate.filePath(), function(err, old){
+        var oldTime = JSON.parse(old).date;
+        test.getRate('EUR').then(function(data) {
+          fs.readFile(exchangeRate.filePath(), function(err, current){
+            var currentTime = JSON.parse(current).date;
+            currentTime.should.equal(oldTime);
+            done();
+          });
+        }).catch(function(err){
+          done(err);
+        });
+      });
+    });
+
+    it("defaults to return live rates", function(done) {
+      var test = new Forex('test_file.json');
+      (test.loadFromFile === false).should.be.true;
+
+      fs.readFile(exchangeRate.filePath(), function(err, old){
+      var oldTime = JSON.parse(old).date;
+        test.getRate('EUR').then(function(data) {
+          fs.readFile(exchangeRate.filePath(), function(err, datum){
+            var currentTime = JSON.parse(datum).date
+            currentTime.should.be.greaterThan(oldTime);
+            done();
+          });
+        }).catch(function(err){
+          done(err);
+        });
+      });
+    });
+
+    it("throws an error when an invalid currency code is entered", function(done){
+      exchangeRate.getRate('SD').then(function() {
+        done()
+      }).catch(function(err){
+        err.should.be.an.instanceof(Error);
+        err.message.should.equal('This is either an incorrect code or this code is not yet supported.');
+        done();
+      });
     });
   });
 });

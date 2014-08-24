@@ -1,11 +1,19 @@
 var fs = require('fs'),
   request = require('request'),
   Q = require('q'),
+  dns = require('dns'),
   saved_rates;
+
+
+// appID: 0812d387198f4342bb179c7e1b9a2aa2
 
 var getSymbol = function(currencyCode){
   var localData = require('./locale_data.json');
-  return localData[currencyCode]['symbol_native'];
+  if(localData[currencyCode]){
+    return localData[currencyCode]['symbol_native'];
+  } else{
+    return {error: new Error('This is either an incorrect code or this code is not yet supported.')}
+  }
 };
 
 var Forex = function(filePath, loadFromFile){
@@ -27,10 +35,12 @@ Forex.prototype.getLatestRate = function(currencyTo){
   if(!currencyTo) deferred.reject({error: true, message: "please enter a currency code"});
   request.get({url: 'http://openexchangerates.org/api/latest.json?app_id=0812d387198f4342bb179c7e1b9a2aa2', json:true}, function(err, r, body){
     if(err) deferred.reject(err);
+    if(body.error) deferred.reject(body);
     fs.writeFile(self.filePath(), JSON.stringify({conversionRates: {USD: body.rates}, date: Date.now()}, null, 4), function(err, datum){
       if(err) deferred.reject(err);
       var rate = body.rates[currencyTo];
       var symbol = getSymbol(currencyTo);
+      if(symbol.error) deferred.reject(symbol.error);
       deferred.resolve(symbol+ ' ' +rate);
     });
   });
@@ -40,9 +50,10 @@ Forex.prototype.getLatestRate = function(currencyTo){
 Forex.prototype.getSavedRate = function(currencyTo){
   var deferred = Q.defer();
   var self = this;
-  if(!currencyTo) deferred.reject({error: true, message: "please enter a currency code"});
+  if(!currencyTo) deferred.reject(new Error("Please enter a currency code"));
   var rate = require('./'+self.filePath()).conversionRates.USD[currencyTo];
   var symbol = getSymbol(currencyTo);
+  if(symbol.error) deferred.reject(symbol.error);
   deferred.resolve(symbol+ ' ' +rate);
   return deferred.promise;
 };
@@ -52,15 +63,14 @@ Forex.prototype.getRate = function(currencyTo){
   var deferred = Q.defer();
   var self = this;
   if(!currencyTo) {
-    deferred.reject({error: true, message: "please enter a currency code"});
+    deferred.reject(new Error("Please enter a currency code"));
     return deferred.promise;
   }
   if (this.loadFromFile) {
     self.getSavedRate(currencyTo)
       .then(function(rate){
         deferred.resolve(rate);
-      })
-      .then(function(err){
+      }, function(err){
         deferred.reject(err);
       });
   }
@@ -68,8 +78,7 @@ Forex.prototype.getRate = function(currencyTo){
     self.getLatestRate(currencyTo)
       .then(function(rate){
         deferred.resolve(rate);
-      })
-      .then(function(err){
+      }, function(err){
         deferred.reject(err);
       });
   }
