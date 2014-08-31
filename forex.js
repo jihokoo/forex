@@ -30,12 +30,11 @@ var Forex = function(options){
   this.loadFromFile = !!options.loadFromFile;
 };
 
-Forex.prototype.getLatestRate = function(currencyTo){
+Forex.prototype.getLatestRate = function(currencyCodes){
   var deferred = Q.defer();
   var self = this;
-  var currencyCodes = arguments;
   var results = [];
-  if(!currencyTo) deferred.reject({error: true, message: "please enter a currency code"});
+  if(!arguments.length) deferred.reject({error: true, message: "please enter a currency code"});
   request.get({url: 'http://openexchangerates.org/api/latest.json?app_id=0812d387198f4342bb179c7e1b9a2aa2', json:true}, function(err, r, body){
     if(err) deferred.reject(err);
     if(body.error) deferred.reject(body);
@@ -56,12 +55,11 @@ Forex.prototype.getLatestRate = function(currencyTo){
   return deferred.promise;
 };
 
-Forex.prototype.getSavedRate = function(currencyTo){
+Forex.prototype.getSavedRate = function(currencyCodes){
   var deferred = Q.defer();
   var self = this;
-  var currencyCodes = arguments;
   var results = [];
-  if(!currencyTo) deferred.reject(new Error("Please enter a currency code"));
+  if(!arguments.length) deferred.reject(new Error("Please enter a currency code"));
   fs.readFile('./'+self.filePath(), function(err, datum){
     var savedRates = JSON.parse(datum)['conversionRates']['USD']
     var symbol;
@@ -79,15 +77,15 @@ Forex.prototype.getSavedRate = function(currencyTo){
 };
 
 // Module will default to loading from live
-Forex.prototype.getRate = function(currencyTo){
+Forex.prototype.getRate = function(currencyCodes){
   var deferred = Q.defer();
   var self = this;
-  if(!currencyTo) {
+  if(!arguments.length) {
     deferred.reject(new Error("Please enter a currency code"));
     return deferred.promise;
   }
   if (this.loadFromFile) {
-    self.getSavedRate(currencyTo)
+    self.getSavedRate(currencyCodes)
       .then(function(rate){
         deferred.resolve(rate);
       }, function(err){
@@ -95,7 +93,7 @@ Forex.prototype.getRate = function(currencyTo){
       });
   }
   else {
-    self.getLatestRate(currencyTo)
+    self.getLatestRate(currencyCodes)
       .then(function(rate){
         deferred.resolve(rate);
       }, function(err){

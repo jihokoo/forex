@@ -61,7 +61,7 @@ describe('forex', function() {
   describe('getLatestRate', function () {
 
     it("can take a currency code and report the latest exchange rate", function(done) {
-      exchangeRate.getLatestRate('USD').then(function(data) {
+      exchangeRate.getLatestRate(['USD']).then(function(data) {
         data[0].should.containDeep({ rate: 1, symbol: '$'});
         done();
       }).catch(function(err){
@@ -76,7 +76,7 @@ describe('forex', function() {
 
     it("updates the static file when getLatestRate is called", function(done){
       var oldTime = require('../'+exchangeRate.filePath()).date;
-      exchangeRate.getLatestRate('USD').then(function() {
+      exchangeRate.getLatestRate(['USD']).then(function() {
         fs.readFile(exchangeRate.filePath(), function(err, datum){
           var currentTime = JSON.parse(datum).date
           currentTime.should.be.greaterThan(oldTime);
@@ -88,7 +88,7 @@ describe('forex', function() {
     });
 
     it("throws an error when an invalid currency code is entered", function(done){
-      exchangeRate.getLatestRate('SD').then(function() {
+      exchangeRate.getLatestRate(['SD']).then(function() {
         done()
       }).catch(function(err){
         err.should.be.an.instanceof(Error);
@@ -106,7 +106,7 @@ describe('forex', function() {
   describe('getSavedRate', function () {
 
     it("can take a currency code and report a saved exchange rate", function(done) {
-      exchangeRate.getSavedRate('EUR').then(function(data) {
+      exchangeRate.getSavedRate(['EUR']).then(function(data) {
         var rate = require('../'+exchangeRate.filePath()).conversionRates['USD']['EUR'];
         var symbol = localeData['EUR']['symbol_native'];
 
@@ -118,7 +118,7 @@ describe('forex', function() {
     });
 
     it("throws an error when an invalid currency code is entered", function(done){
-      exchangeRate.getLatestRate('SD').then(function() {
+      exchangeRate.getLatestRate(['SD']).then(function() {
         done()
       }).catch(function(err){
         err.should.be.an.instanceof(Error);
@@ -143,7 +143,7 @@ describe('forex', function() {
 
       fs.readFile(exchangeRate.filePath(), function(err, old){
         var oldTime = JSON.parse(old).date;
-        test.getRate('EUR').then(function(data) {
+        test.getRate(['EUR']).then(function(data) {
           fs.readFile(exchangeRate.filePath(), function(err, current){
             var currentTime = JSON.parse(current).date;
             currentTime.should.equal(oldTime);
@@ -161,7 +161,7 @@ describe('forex', function() {
 
       fs.readFile(exchangeRate.filePath(), function(err, old){
       var oldTime = JSON.parse(old).date;
-        test.getRate('EUR').then(function(data) {
+        test.getRate(['EUR']).then(function(data) {
           fs.readFile(exchangeRate.filePath(), function(err, datum){
             var currentTime = JSON.parse(datum).date
             currentTime.should.be.greaterThan(oldTime);
@@ -174,7 +174,7 @@ describe('forex', function() {
     });
 
     it("throws an error when an invalid currency code is entered", function(done){
-      exchangeRate.getRate('SD').then(function() {
+      exchangeRate.getRate(['SD']).then(function() {
         done()
       }).catch(function(err){
         err.should.be.an.instanceof(Error);
