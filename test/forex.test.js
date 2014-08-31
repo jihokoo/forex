@@ -26,7 +26,7 @@ describe('forex', function() {
   });
 
   beforeEach(function() {
-    exchangeRate = new Forex('test_file.json');
+    exchangeRate = new Forex({filePath: 'test_file.json'});
   });
 
   it("should return an instance of itself when called as a function", function() {
@@ -44,7 +44,7 @@ describe('forex', function() {
   });
 
   it("should replace file extensions to .json", function(){
-    var test = new Forex('other_file.csv');
+    var test = new Forex({filePath: 'other_file.csv'});
     test.filePath().should.equal('other_file.json');
   });
 
@@ -62,7 +62,7 @@ describe('forex', function() {
 
     it("can take a currency code and report the latest exchange rate", function(done) {
       exchangeRate.getLatestRate('USD').then(function(data) {
-        data.should.equal('$ 1');
+        data[0].should.containDeep({ rate: 1, symbol: '$'});
         done();
       }).catch(function(err){
         done(err);
@@ -110,7 +110,7 @@ describe('forex', function() {
         var rate = require('../'+exchangeRate.filePath()).conversionRates['USD']['EUR'];
         var symbol = localeData['EUR']['symbol_native'];
 
-        data.should.equal(symbol+ ' ' +rate);
+        data[0].should.containDeep({ rate: rate, symbol: symbol});
         done();
       }).catch(function(err){
         done(err);
@@ -138,7 +138,7 @@ describe('forex', function() {
 
   describe('getRate', function() {
     it("can be configured to return from static store or live api through a second parameter", function(done) {
-      var test = new Forex('test_file.json', true);
+      var test = new Forex({filePath: 'test_file.json', loadFromFile: true});
       test.loadFromFile.should.be.true;
 
       fs.readFile(exchangeRate.filePath(), function(err, old){
@@ -156,7 +156,7 @@ describe('forex', function() {
     });
 
     it("defaults to return live rates", function(done) {
-      var test = new Forex('test_file.json');
+      var test = new Forex({filePath: 'test_file.json'});
       (test.loadFromFile === false).should.be.true;
 
       fs.readFile(exchangeRate.filePath(), function(err, old){
