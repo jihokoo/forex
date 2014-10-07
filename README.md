@@ -1,2 +1,2 @@
-# Install dependencies: `npm install`
-# Test: `npm test`
+- Install dependencies: `npm install`
+- Test: `npm test`
